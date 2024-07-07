@@ -1,13 +1,4 @@
-/**
- * Sample React Native App
- * https://github.com/facebook/react-native
- *
- * @format
- * @flow strict-local
- */
-
-import React from 'react';
-import type {Node} from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   SafeAreaView,
   ScrollView,
@@ -16,17 +7,13 @@ import {
   Text,
   useColorScheme,
   View,
+  Button,
 } from 'react-native';
+//import 'core-js/stable';
+//import 'regenerator-runtime/runtime';
+import Voice from 'react-native-voice';
 
-import {
-  Colors,
-  DebugInstructions,
-  Header,
-  LearnMoreLinks,
-  ReloadInstructions,
-} from 'react-native/Libraries/NewAppScreen';
-
-const Section = ({children, title}): Node => {
+const Section = ({ children, title }) => {
   const isDarkMode = useColorScheme() === 'dark';
   return (
     <View style={styles.sectionContainer}>
@@ -52,11 +39,48 @@ const Section = ({children, title}): Node => {
   );
 };
 
-const App: () => Node = () => {
+const App = () => {
   const isDarkMode = useColorScheme() === 'dark';
-
   const backgroundStyle = {
     backgroundColor: isDarkMode ? Colors.darker : Colors.lighter,
+  };
+
+  const [isListening, setIsListening] = useState(false);
+  const [results, setResults] = useState([]);
+
+  useEffect(() => {
+    Voice.onSpeechResults = onSpeechResults;
+    Voice.onSpeechError = onSpeechError;
+
+    return () => {
+      Voice.destroy().then(Voice.removeAllListeners);
+    };
+  }, []);
+
+  const onSpeechResults = (e) => {
+    setResults(e.value);
+  };
+
+  const onSpeechError = (e) => {
+    console.error(e);
+  };
+
+  const startListening = async () => {
+    try {
+      await Voice.start('ko-KR');
+      setIsListening(true);
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  const stopListening = async () => {
+    try {
+      await Voice.stop();
+      setIsListening(false);
+    } catch (e) {
+      console.error(e);
+    }
   };
 
   return (
@@ -65,25 +89,20 @@ const App: () => Node = () => {
       <ScrollView
         contentInsetAdjustmentBehavior="automatic"
         style={backgroundStyle}>
-        <Header />
         <View
           style={{
             backgroundColor: isDarkMode ? Colors.black : Colors.white,
           }}>
-          <Section title="Step One">
-            Edit <Text style={styles.highlight}>App.js</Text> to change this
-            screen and then come back to see your edits.
+          <Section title="음성 인식">
+            <Button
+              title={isListening ? '음성 인식 중지' : '음성 인식 시작'}
+              onPress={isListening ? stopListening : startListening}
+            />
+            <Text>음성 인식 결과:</Text>
+            {results.map((result, index) => (
+              <Text key={index}>{result}</Text>
+            ))}
           </Section>
-          <Section title="See Your Changes">
-            <ReloadInstructions />
-          </Section>
-          <Section title="Debug">
-            <DebugInstructions />
-          </Section>
-          <Section title="Learn More">
-            Read the docs to discover what to do next:
-          </Section>
-          <LearnMoreLinks />
         </View>
       </ScrollView>
     </SafeAreaView>
@@ -108,5 +127,13 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
 });
+
+const Colors = {
+  white: '#FFFFFF',
+  black: '#000000',
+  light: '#F5F5F5',
+  dark: '#333333',
+  // 필요한 색상 추가
+};
 
 export default App;
